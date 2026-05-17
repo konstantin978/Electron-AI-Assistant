@@ -1,5 +1,6 @@
-import { toolDefs, toolFns } from "./tools.js";
+import { toolDefs, toolFns } from "./tools/index.js";
 import { OLLAMA_URL, MODEL } from "./config.js";
+import { log } from "./utils/logger.js";
 
 export type Role = "system" | "user" | "assistant" | "tool";
 
@@ -43,16 +44,12 @@ export const call = async (
 
   if (msg.tool_calls && msg.tool_calls.length > 0) {
     for (const tc of msg.tool_calls) {
-      console.log(
-        `🔧 [tool] ${tc.function.name}(${JSON.stringify(tc.function.arguments)})`,
-      );
+      log.tool(tc.function.name, tc.function.arguments);
       const fn = toolFns[tc.function.name];
       const result = fn
         ? await fn(tc.function.arguments)
         : `Unknown tool: ${tc.function.name}`;
-      const preview =
-        result.length > 200 ? result.slice(0, 200) + "..." : result;
-      console.log(`   ↳ ${preview.replace(/\n/g, " ")}`);
+      log.toolResult(result);
       messages.push({ role: "tool", content: String(result) });
     }
     return call(messages, null);
