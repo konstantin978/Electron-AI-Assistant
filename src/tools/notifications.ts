@@ -21,7 +21,7 @@ const sendNotification: Tool = {
           },
           title: {
             type: "string",
-            description: "Optional notification title. Defaults to 'Jarvis'.",
+            description: "Optional notification title. Defaults to 'Electron'.",
           },
         },
         required: ["message"],
@@ -32,7 +32,7 @@ const sendNotification: Tool = {
     const message = typeof args.message === "string" ? args.message : "";
     if (!message) return "Error: 'message' argument is required";
     const title =
-      typeof args.title === "string" && args.title ? args.title : "Jarvis";
+      typeof args.title === "string" && args.title ? args.title : "Electron";
 
     try {
       await showNotification(message, title);

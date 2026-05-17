@@ -4,7 +4,7 @@ const escape = (s: string): string => s.replace(/"/g, '\\"');
 
 export const showNotification = (
   message: string,
-  title = "Jarvis",
+  title = "Electron",
 ): Promise<void> =>
   new Promise((resolve, reject) => {
     const script = `display notification "${escape(message)}" with title "${escape(title)}"`;

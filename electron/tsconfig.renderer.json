@@ -1,18 +1,18 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "outDir": "dist",
-    "rootDir": ".",
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "jsx": "react-jsx"
+    "types": ["vite/client"],
+    "allowImportingTsExtensions": true
   },
-  "include": ["index.ts", "src/**/*", "electron/**/*"],
-  "exclude": ["node_modules", "dist", "electron/renderer/**/*"]
+  "include": ["renderer/**/*"]
 }

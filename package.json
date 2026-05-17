@@ -1,38 +1,94 @@
 {
-  "name": "jarvis",
+  "name": "electron-ai-assistant",
+  "version": "0.1.0",
+  "description": "A local-first voice AI assistant for macOS, powered by Ollama. Listens via Whisper, speaks via macOS TTS, exposes tools for filesystem, shell, clipboard, screenshots, notifications, app control, and music.",
   "type": "module",
-  "version": "1.0.0",
-  "main": "index.ts",
+  "main": "dist/electron/main.js",
   "scripts": {
     "start": "tsx index.ts",
     "start:text": "MODE=text tsx index.ts",
-    "build": "tsc",
+    "build:electron": "tsc",
+    "build:renderer": "vite build",
+    "build": "npm run build:electron && npm run build:renderer",
     "electron": "npm run build && electron dist/electron/main.js",
+    "dev:renderer": "vite",
+    "dev:electron": "npm run build:electron && ELECTRON_DEV=1 wait-on http://localhost:5173 && electron dist/electron/main.js",
+    "dev": "concurrently -k -n vite,electron -c blue,magenta \"npm:dev:renderer\" \"npm:dev:electron\"",
+    "dist": "npm run build && electron-builder",
+    "dist:dir": "npm run build && electron-builder --dir",
     "typecheck": "tsc --noEmit",
+    "typecheck:renderer": "tsc --noEmit -p electron/tsconfig.renderer.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "format:check": "prettier --check ."
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "ai",
+    "assistant",
+    "voice",
+    "ollama",
+    "whisper",
+    "electron",
+    "macos",
+    "local-first"
+  ],
+  "author": "Konstantin Ghevondyan",
+  "license": "MIT",
+  "build": {
+    "appId": "com.konstantin.electron-ai-assistant",
+    "productName": "Electron AI Assistant",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "models",
+        "to": "models",
+        "filter": ["**/*"]
+      }
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64", "x64"]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null
+    },
+    "asar": true
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^25.8.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "concurrently": "^9.2.1",
     "electron": "^42.1.0",
+    "electron-builder": "^26.8.1",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.6.0",
     "prettier": "^3.8.3",
     "tsx": "^4.22.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.3"
+    "typescript-eslint": "^8.59.3",
+    "vite": "^8.0.13",
+    "wait-on": "^9.0.10"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
-    "eslint": "^10.4.0"
+    "eslint": "^10.4.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
   }
 }
