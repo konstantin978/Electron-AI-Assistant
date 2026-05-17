@@ -1,20 +1,16 @@
 import "dotenv/config";
 import { statSync } from "node:fs";
-import { createInterface } from "node:readline/promises";
 import { call, type Message } from "./src/llm.js";
 import { speak } from "./src/tts.js";
 import { recordAudio, transcribe } from "./src/stt.js";
 import { WHISPER_MODEL, AUDIO_PATH, SYSTEM_PROMPT } from "./src/config.js";
+import { rl, ask } from "./src/prompt.js";
 
 const TEXT_MODE = process.env.MODE === "text";
 
-const rl = TEXT_MODE
-  ? createInterface({ input: process.stdin, output: process.stdout })
-  : null;
-
 const getInput = async (): Promise<string> => {
   if (TEXT_MODE) {
-    return (await rl!.question("\nyou: ")).trim();
+    return ask("\nyou: ");
   }
 
   console.log("\n🎤 listening (speak, then pause)...");
@@ -42,4 +38,4 @@ while (true) {
   if (!TEXT_MODE) await speak(reply);
 }
 
-rl?.close();
+rl.close();
