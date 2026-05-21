@@ -21,25 +21,104 @@ type OllamaChatResponse = {
   message: Message;
 };
 
-export const call = async (
-  messages: Message[],
-  userText: string | null,
-): Promise<string> => {
-  if (userText) messages.push({ role: "user", content: userText });
+type OllamaStreamChunk = {
+  message: Message;
+  done: boolean;
+};
 
-  const response = await fetch(OLLAMA_URL, {
+export type OnChunk = (text: string) => void;
+
+const requestOllama = async (
+  messages: Message[],
+  stream: boolean,
+): Promise<Response> =>
+  fetch(OLLAMA_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: MODEL,
       messages,
       tools: toolDefs,
-      stream: false,
+      stream,
+      options: {
+        temperature: 0,
+      },
     }),
   });
 
+/**
+ * Lightweight LLM call with no tools attached. Used by summarization
+ * and memory extraction — tasks that should produce plain text only.
+ */
+export const simpleCompletion = async (
+  messages: Message[],
+  temperature = 0.3,
+): Promise<string> => {
+  const response = await fetch(OLLAMA_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: MODEL,
+      messages,
+      stream: false,
+      options: { temperature },
+    }),
+  });
   const data = (await response.json()) as OllamaChatResponse;
-  const msg = data.message;
+  return data.message.content ?? "";
+};
+
+const readStreamedMessage = async (
+  response: Response,
+  onChunk: OnChunk,
+): Promise<Message> => {
+  if (!response.body) throw new Error("No response body");
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  const assembled: Message = { role: "assistant", content: "" };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const parsed = JSON.parse(trimmed) as OllamaStreamChunk;
+      const piece = parsed.message.content ?? "";
+      if (piece) {
+        assembled.content = (assembled.content ?? "") + piece;
+        onChunk(piece);
+      }
+      if (parsed.message.tool_calls && parsed.message.tool_calls.length > 0) {
+        assembled.tool_calls = parsed.message.tool_calls;
+      }
+    }
+  }
+
+  return assembled;
+};
+
+export const call = async (
+  messages: Message[],
+  userText: string | null,
+  onChunk?: OnChunk,
+): Promise<string> => {
+  if (userText) messages.push({ role: "user", content: userText });
+
+  const useStream = !!onChunk;
+  const response = await requestOllama(messages, useStream);
+
+  const msg: Message = useStream
+    ? await readStreamedMessage(response, onChunk)
+    : ((await response.json()) as OllamaChatResponse).message;
+
   messages.push(msg);
 
   if (msg.tool_calls && msg.tool_calls.length > 0) {
@@ -52,7 +131,7 @@ export const call = async (
       log.toolResult(result);
       messages.push({ role: "tool", content: String(result) });
     }
-    return call(messages, null);
+    return call(messages, null, onChunk);
   }
 
   return msg.content ?? "";

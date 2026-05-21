@@ -13,7 +13,7 @@
     "electron": "npm run build && electron dist/electron/main.js",
     "dev:renderer": "vite",
     "dev:electron": "npm run build:electron && ELECTRON_DEV=1 wait-on http://localhost:5173 && electron dist/electron/main.js",
-    "dev": "concurrently -k -n vite,electron -c blue,magenta \"npm:dev:renderer\" \"npm:dev:electron\"",
+    "dev": "node scripts/dev.mjs",
     "dist": "npm run build && electron-builder",
     "dist:dir": "npm run build && electron-builder --dir",
     "typecheck": "tsc --noEmit",
@@ -49,14 +49,19 @@
       {
         "from": "models",
         "to": "models",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "mac": {
       "target": [
         {
           "target": "dmg",
-          "arch": ["arm64", "x64"]
+          "arch": [
+            "arm64",
+            "x64"
+          ]
         }
       ],
       "category": "public.app-category.productivity",
@@ -88,6 +93,7 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "eslint": "^10.4.0",
+    "mongodb": "^7.2.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   }

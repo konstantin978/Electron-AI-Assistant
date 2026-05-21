@@ -1,0 +1,47 @@
+import React, { useState, type KeyboardEvent } from "react";
+import type { Status } from "../types.js";
+import { MicOrb } from "./MicOrb.js";
+
+type Props = {
+  status: Status;
+  onMic: () => void;
+  onSend: (text: string) => void;
+};
+
+export const HomeView = ({ status, onMic, onSend }: Props) => {
+  const [draft, setDraft] = useState("");
+  const disabled = status === "thinking";
+
+  const submit = (): void => {
+    const text = draft.trim();
+    if (!text || disabled) return;
+    onSend(text);
+    setDraft("");
+  };
+
+  const handleKey = (e: KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submit();
+    }
+  };
+
+  return (
+    <div className="home-view">
+      <div className="home-center">
+        <MicOrb status={status} onClick={onMic} />
+      </div>
+      <div className="input-row">
+        <input
+          className="input-field"
+          type="text"
+          placeholder="Or type a message…"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={handleKey}
+          disabled={disabled}
+        />
+      </div>
+    </div>
+  );
+};
