@@ -35,6 +35,7 @@ export const recordAudio = (path: string): Promise<void> =>
     p.stderr.on("data", (chunk: Buffer) => {
       err += chunk.toString();
     });
+    p.stderr.on("error", reject);
     p.on("close", (code) =>
       code === 0
         ? resolve()
@@ -74,6 +75,8 @@ export const transcribe = (
     p.stderr.on("data", (chunk: Buffer) => {
       err += chunk.toString();
     });
+    p.stdout.on("error", reject);
+    p.stderr.on("error", reject);
     p.on("close", (code) =>
       code === 0
         ? resolve(out.trim())

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { BatteryStatus } from "../../preload.js";
 
 export const BatteryIndicator = () => {

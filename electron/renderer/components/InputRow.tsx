@@ -1,4 +1,4 @@
-import React, { useState, type KeyboardEvent } from "react";
+import { useState, type KeyboardEvent } from "react";
 import type { Status } from "../types.js";
 
 type Props = {

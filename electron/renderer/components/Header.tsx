@@ -1,14 +1,12 @@
-import React from "react";
 import type { Status, View } from "../types.js";
 import {
   HistoryIcon,
   BackIcon,
   NewChatIcon,
-  SettingsIcon,
   ChatBubbleIcon,
   HomeIcon,
+  ActivityIcon,
 } from "./icons.js";
-import { BatteryIndicator } from "./BatteryIndicator.js";
 
 type Props = {
   status: Status;
@@ -19,6 +17,7 @@ type Props = {
   onNewChat: () => void;
   onBack: () => void;
   onToggleChat: () => void;
+  onOpenProcesses: () => void;
 };
 
 const STATUS_LABELS: Record<Status, string> = {
@@ -37,6 +36,7 @@ export const Header = ({
   onNewChat,
   onBack,
   onToggleChat,
+  onOpenProcesses,
 }: Props) => {
   const isIdle = status === "idle";
   const isHome = view.kind === "home";
@@ -79,8 +79,6 @@ export const Header = ({
       )}
 
       <div className="header-actions">
-        <BatteryIndicator />
-
         {isHistory && (
           <button
             className="icon-btn"
@@ -121,10 +119,11 @@ export const Header = ({
         <button
           className="icon-btn"
           type="button"
-          title="Settings"
-          aria-label="Settings"
+          onClick={onOpenProcesses}
+          title="System activity"
+          aria-label="System activity"
         >
-          <SettingsIcon />
+          <ActivityIcon />
         </button>
       </div>
     </header>

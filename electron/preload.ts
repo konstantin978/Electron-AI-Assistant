@@ -17,9 +17,43 @@ export type BatteryStatus = {
   state: "charging" | "discharging" | "charged" | "unknown";
 };
 
+export type SystemStats = {
+  cpu: number;
+  memUsed: number;
+  memTotal: number;
+  memPercent: number;
+};
+
+export type ProcessInfo = {
+  pid: number;
+  cpu: number;
+  mem: number;
+  command: string;
+};
+
+export type ProcessCounts = {
+  processes: number;
+  threads: number;
+};
+
 export type SystemApi = {
   battery: () => Promise<BatteryStatus | null>;
   onBattery: (callback: (status: BatteryStatus) => void) => () => void;
+  stats: () => Promise<SystemStats>;
+  onStats: (callback: (stats: SystemStats) => void) => () => void;
+  processes: () => Promise<ProcessInfo[]>;
+  counts: () => Promise<ProcessCounts>;
+};
+
+export type ConfirmRequest = {
+  id: string;
+  question: string;
+  risk: "normal" | "danger";
+};
+
+export type ConfirmApi = {
+  onRequest: (callback: (req: ConfirmRequest) => void) => () => void;
+  respond: (id: string, ok: boolean) => Promise<void>;
 };
 
 export type AiApi = {
@@ -85,8 +119,30 @@ const systemApi: SystemApi = {
       ipcRenderer.removeListener("battery:update", wrapped);
     };
   },
+  stats: () => ipcRenderer.invoke("system:stats"),
+  onStats: (callback) => {
+    const wrapped = (_e: unknown, stats: SystemStats): void => callback(stats);
+    ipcRenderer.on("system:stats:update", wrapped);
+    return () => {
+      ipcRenderer.removeListener("system:stats:update", wrapped);
+    };
+  },
+  processes: () => ipcRenderer.invoke("system:processes"),
+  counts: () => ipcRenderer.invoke("system:counts"),
+};
+
+const confirmApi: ConfirmApi = {
+  onRequest: (callback) => {
+    const wrapped = (_e: unknown, req: ConfirmRequest): void => callback(req);
+    ipcRenderer.on("confirm:request", wrapped);
+    return () => {
+      ipcRenderer.removeListener("confirm:request", wrapped);
+    };
+  },
+  respond: (id, ok) => ipcRenderer.invoke("confirm:response", id, ok),
 };
 
 contextBridge.exposeInMainWorld("chats", chatsApi);
 contextBridge.exposeInMainWorld("ai", aiApi);
 contextBridge.exposeInMainWorld("system", systemApi);
+contextBridge.exposeInMainWorld("approval", confirmApi);

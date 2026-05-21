@@ -1,8 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Header } from "./components/Header.js";
 import { HomeView } from "./components/HomeView.js";
 import { HistoryView } from "./components/HistoryView.js";
 import { ChatView } from "./components/ChatView.js";
+import { ConfirmDialog } from "./components/ConfirmDialog.js";
+import { SystemStats } from "./components/SystemStats.js";
+import { BatteryIndicator } from "./components/BatteryIndicator.js";
+import { ProcessesPanel } from "./components/ProcessesPanel.js";
 import { chatStore } from "./store/chats.js";
 import { aiStore } from "./store/ai.js";
 import type { Chat, Status, View } from "./types.js";
@@ -19,6 +23,7 @@ const App = () => {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [dbReady, setDbReady] = useState(false);
   const [draft, setDraft] = useState("");
+  const [showProcesses, setShowProcesses] = useState(false);
   const activeChatIdRef = useRef<string | null>(null);
 
   const activeChat = chats.find((c) => c.id === activeChatId) ?? null;
@@ -195,7 +200,13 @@ const App = () => {
         onNewChat={handleNewChat}
         onBack={handleBack}
         onToggleChat={handleToggleChat}
+        onOpenProcesses={() => setShowProcesses(true)}
       />
+
+      <div className="sub-header">
+        <SystemStats />
+        <BatteryIndicator />
+      </div>
 
       {view.kind === "home" && (
         <HomeView status={status} onMic={handleMic} onSend={handleSend} />
@@ -212,6 +223,11 @@ const App = () => {
           draft={draft}
           onSend={handleSend}
         />
+      )}
+
+      <ConfirmDialog />
+      {showProcesses && (
+        <ProcessesPanel onClose={() => setShowProcesses(false)} />
       )}
     </div>
   );

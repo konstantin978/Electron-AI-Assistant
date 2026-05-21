@@ -1,4 +1,3 @@
-import React from "react";
 import type { Chat, Status } from "../types.js";
 import { Conversation } from "./Conversation.js";
 import { InputRow } from "./InputRow.js";

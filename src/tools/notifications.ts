@@ -5,6 +5,13 @@ import type { Tool } from "./types.js";
 
 const MAX_TIMER_SECONDS = 86_400;
 
+const activeTimers = new Set<ReturnType<typeof setTimeout>>();
+
+export const cancelAllTimers = (): void => {
+  for (const t of activeTimers) clearTimeout(t);
+  activeTimers.clear();
+};
+
 const sendNotification: Tool = {
   def: {
     type: "function",
@@ -76,11 +83,17 @@ const setTimer: Tool = {
         ? args.message
         : "Timer done";
 
-    setTimeout(() => {
+    const handle = setTimeout(() => {
+      activeTimers.delete(handle);
       log.info(`\n⏰ ${message}`);
-      speak(message).catch(() => {});
-      showNotification(message).catch(() => {});
+      speak(message).catch((err: Error) =>
+        log.warn(`timer speak failed: ${err.message}`),
+      );
+      showNotification(message).catch((err: Error) =>
+        log.warn(`timer notify failed: ${err.message}`),
+      );
     }, seconds * 1000);
+    activeTimers.add(handle);
 
     return `Timer set for ${seconds} seconds: ${message}`;
   },

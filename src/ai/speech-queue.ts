@@ -1,4 +1,5 @@
 import { speak } from "../tts.js";
+import { log } from "../utils/logger.js";
 
 /**
  * Sentence-by-sentence speech for streaming TTS.
@@ -46,8 +47,8 @@ export class StreamingSpeaker {
   private enqueue(sentence: string): void {
     this.queue = this.queue
       .then(() => speak(sentence))
-      .catch(() => {
-        // Swallow speech errors — they shouldn't break the chat flow
+      .catch((err: Error) => {
+        log.warn(`speech queue error: ${err.message}`);
       });
   }
 }

@@ -1,6 +1,6 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { ask } from "../prompt.js";
+import { confirmInUi, type ConfirmRisk } from "../ai/confirm.js";
 import { log } from "../utils/logger.js";
 import type { Tool } from "./types.js";
 
@@ -8,6 +8,31 @@ const execAsync = promisify(exec);
 
 const SHELL_TIMEOUT_MS = 10_000;
 const SHELL_MAX_BUFFER = 100_000;
+
+// Patterns that indicate a destructive or irreversible action.
+// If any matches, the UI shows a red "danger" confirmation requiring hold.
+const DANGEROUS_PATTERNS: RegExp[] = [
+  /\brm\s+-[rfR]+/i, // rm -r, rm -rf
+  /\brm\s+\//i, // rm at root
+  /\bdd\s+if=/i, // disk dump
+  /\bmkfs\b/i, // format filesystem
+  /\bshutdown\b/i,
+  /\breboot\b/i,
+  /\bhalt\b/i,
+  /\bsudo\b/i,
+  /\bsu\s/i,
+  />\s*\/(?:etc|usr|bin|System|Library)/i, // redirect into system paths
+  /\bchmod\s+(?:777|666|-R)/i,
+  /\bchown\b.*\/(?:etc|usr|System)/i,
+  /\bkillall\b/i,
+  /\bkill\s+-9\s+1\b/, // kill init
+  /\bdrop\s+(?:database|table)/i,
+  /\bdiskutil\s+(?:erase|partition)/i,
+  /\bformat\b/i,
+];
+
+const assessRisk = (command: string): ConfirmRisk =>
+  DANGEROUS_PATTERNS.some((re) => re.test(command)) ? "danger" : "normal";
 
 export const tools: Tool[] = [
   {
@@ -34,12 +59,14 @@ export const tools: Tool[] = [
       const command = typeof args.command === "string" ? args.command : "";
       if (!command) return "Error: 'command' argument is required";
 
-      const answer = await ask(
-        `\n⚠️  AI wants to run: ${command}\nApprove? (y/N): `,
+      const risk = assessRisk(command);
+      const approved = await confirmInUi(
+        `Run shell command:\n${command}`,
+        risk,
       );
-      if (answer.toLowerCase() !== "y") return "Command denied by user.";
+      if (!approved) return "Command denied by user.";
 
-      log.info(`[shell] ${command}`);
+      log.info(`[shell] ${command} (risk=${risk})`);
 
       try {
         const { stdout, stderr } = await execAsync(command, {

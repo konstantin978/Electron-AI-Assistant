@@ -90,14 +90,25 @@ const readStreamedMessage = async (
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
-      const parsed = JSON.parse(trimmed) as OllamaStreamChunk;
+
+      let parsed: OllamaStreamChunk;
+      try {
+        parsed = JSON.parse(trimmed) as OllamaStreamChunk;
+      } catch (err) {
+        log.warn(`stream parse failed: ${(err as Error).message}`);
+        continue;
+      }
+
       const piece = parsed.message.content ?? "";
       if (piece) {
         assembled.content = (assembled.content ?? "") + piece;
         onChunk(piece);
       }
       if (parsed.message.tool_calls && parsed.message.tool_calls.length > 0) {
-        assembled.tool_calls = parsed.message.tool_calls;
+        assembled.tool_calls = [
+          ...(assembled.tool_calls ?? []),
+          ...parsed.message.tool_calls,
+        ];
       }
     }
   }
@@ -125,11 +136,19 @@ export const call = async (
     for (const tc of msg.tool_calls) {
       log.tool(tc.function.name, tc.function.arguments);
       const fn = toolFns[tc.function.name];
-      const result = fn
-        ? await fn(tc.function.arguments)
-        : `Unknown tool: ${tc.function.name}`;
+      let result: string;
+      if (!fn) {
+        result = `Unknown tool: ${tc.function.name}`;
+      } else {
+        try {
+          result = String(await fn(tc.function.arguments));
+        } catch (err) {
+          result = `Tool error: ${(err as Error).message}`;
+          log.error(`tool ${tc.function.name} threw: ${(err as Error).message}`);
+        }
+      }
       log.toolResult(result);
-      messages.push({ role: "tool", content: String(result) });
+      messages.push({ role: "tool", content: result });
     }
     return call(messages, null, onChunk);
   }

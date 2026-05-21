@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Message } from "./Message.js";
 import { TypingIndicator } from "./TypingIndicator.js";
 import type { ChatMessage, Status, ToolCall } from "../types.js";
