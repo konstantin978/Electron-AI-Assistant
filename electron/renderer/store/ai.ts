@@ -11,6 +11,8 @@ export const aiStore = {
 
   speak: (text: string): Promise<void> => window.ai.speak(text),
 
+  cancel: (): Promise<void> => window.ai.cancel(),
+
   onHotkey: (callback: () => void): (() => void) =>
     window.ai.onHotkey(callback),
 

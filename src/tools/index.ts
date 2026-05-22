@@ -6,6 +6,7 @@ import { tools as screenshotTools } from "./screenshot.js";
 import { tools as notificationTools } from "./notifications.js";
 import { tools as appTools } from "./apps.js";
 import { tools as clipboardTools } from "./clipboard.js";
+import { tools as webSearchTools } from "./web_search.js";
 
 const allTools: Tool[] = [
   ...timeTools,
@@ -15,6 +16,7 @@ const allTools: Tool[] = [
   ...notificationTools,
   ...appTools,
   ...clipboardTools,
+  ...webSearchTools,
 ];
 
 export const toolDefs: ToolDef[] = allTools.map((t) => t.def);

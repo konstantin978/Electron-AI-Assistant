@@ -1,4 +1,4 @@
-import { speak } from "../tts.js";
+import { speak, cancelSpeech } from "../tts.js";
 import { log } from "../utils/logger.js";
 
 /**
@@ -12,22 +12,26 @@ import { log } from "../utils/logger.js";
 export class StreamingSpeaker {
   private buffer = "";
   private queue: Promise<void> = Promise.resolve();
+  private cancelled = false;
 
   push(chunk: string): void {
+    if (this.cancelled) return;
     this.buffer += chunk;
     this.flushReady();
   }
 
   end(): void {
+    if (this.cancelled) return;
     const tail = this.buffer.trim();
     this.buffer = "";
     if (tail.length > 0) this.enqueue(tail);
   }
 
   cancel(): void {
+    this.cancelled = true;
     this.buffer = "";
-    // Existing queue will finish — `say` doesn't support mid-utterance interrupt
-    // from outside without tracking PIDs. Acceptable for v1.
+    this.queue = Promise.resolve();
+    cancelSpeech();
   }
 
   private flushReady(): void {
@@ -46,7 +50,10 @@ export class StreamingSpeaker {
 
   private enqueue(sentence: string): void {
     this.queue = this.queue
-      .then(() => speak(sentence))
+      .then(() => {
+        if (this.cancelled) return;
+        return speak(sentence);
+      })
       .catch((err: Error) => {
         log.warn(`speech queue error: ${err.message}`);
       });

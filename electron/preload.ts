@@ -64,6 +64,7 @@ export type AiApi = {
   ) => Promise<string>;
   listen: () => Promise<string>;
   speak: (text: string) => Promise<void>;
+  cancel: () => Promise<void>;
   onHotkey: (callback: () => void) => () => void;
   onChunk: (callback: (payload: AiChunkPayload) => void) => () => void;
   onChunkEnd: (callback: (payload: AiChunkEndPayload) => void) => () => void;
@@ -84,6 +85,7 @@ const aiApi: AiApi = {
     ipcRenderer.invoke("ai:send", chatId, userText, speak),
   listen: () => ipcRenderer.invoke("ai:listen"),
   speak: (text) => ipcRenderer.invoke("ai:speak", text),
+  cancel: () => ipcRenderer.invoke("ai:cancel"),
   onHotkey: (callback) => {
     const wrapped = (): void => callback();
     ipcRenderer.on("hotkey:trigger", wrapped);

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import {
   app,
   globalShortcut,
@@ -21,7 +22,7 @@ import {
   deleteChat,
 } from "../src/db/chats.js";
 import type { Chat, ChatMessage } from "../src/db/types.js";
-import { sendMessage } from "../src/ai/bridge.js";
+import { sendMessage, cancelActiveSpeech } from "../src/ai/bridge.js";
 import { getBatteryStatus } from "../src/system/battery.js";
 import { getSystemStats } from "../src/system/stats.js";
 import {
@@ -175,11 +176,20 @@ const registerIpc = (): void => {
   ipcMain.handle(
     "ai:listen",
     safeHandle("ai:listen", async () => {
+      // Stop any ongoing speech the moment the user starts a new turn
+      cancelActiveSpeech();
       log.info("🎤 listening...");
       await recordAudio(AUDIO_PATH);
       const transcript = await transcribe(AUDIO_PATH, WHISPER_MODEL);
       log.info(`[transcribed] "${transcript}"`);
       return transcript;
+    }),
+  );
+
+  ipcMain.handle(
+    "ai:cancel",
+    safeHandle("ai:cancel", () => {
+      cancelActiveSpeech();
     }),
   );
 

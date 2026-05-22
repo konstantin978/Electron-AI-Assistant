@@ -84,16 +84,28 @@ export type SendOptions = {
   speak?: boolean;
 };
 
+// The speaker for the most recent voice-mode turn. A new request cancels it
+// so the AI shuts up immediately when the user wants to say something else.
+let activeSpeaker: StreamingSpeaker | null = null;
+
+export const cancelActiveSpeech = (): void => {
+  activeSpeaker?.cancel();
+  activeSpeaker = null;
+};
+
 export const sendMessage = async (
   chatId: string,
   userText: string,
   onChunk?: OnChunk,
   options: SendOptions = {},
 ): Promise<string> => {
+  cancelActiveSpeech();
+
   const chat = await getChat(chatId);
   if (!chat) throw new Error(`Chat not found: ${chatId}`);
 
   const speaker = options.speak ? new StreamingSpeaker() : null;
+  if (speaker) activeSpeaker = speaker;
 
   // 1. Persist user message immediately
   const userDbMessage: ChatMessage = {
