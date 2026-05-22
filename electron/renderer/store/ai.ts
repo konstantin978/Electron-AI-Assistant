@@ -16,6 +16,8 @@ export const aiStore = {
   onHotkey: (callback: () => void): (() => void) =>
     window.ai.onHotkey(callback),
 
+  onWake: (callback: () => void): (() => void) => window.ai.onWake(callback),
+
   onChunk: (callback: (payload: AiChunkPayload) => void): (() => void) =>
     window.ai.onChunk(callback),
 

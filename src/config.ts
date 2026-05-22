@@ -31,7 +31,14 @@ const MODELS_DIR = IS_PACKAGED
 export const OLLAMA_URL = "http://localhost:11434/api/chat";
 export const MODEL = "qwen2.5:7b";
 export const WHISPER_MODEL = join(MODELS_DIR, "ggml-small.en.bin");
+export const WHISPER_TINY_MODEL = join(MODELS_DIR, "ggml-tiny.en.bin");
 export const AUDIO_PATH = "/tmp/electron.wav";
+export const WAKE_AUDIO_PATH = "/tmp/electron-wake.wav";
+
+// Toggle continuous wake-word listening. Off by default — turn on via
+// WAKE_WORD=1 in .env so users opt in to the always-on CPU cost.
+export const WAKE_WORD_ENABLED = process.env.WAKE_WORD === "1";
+export const WAKE_WORD = "electron";
 
 const USER_HOME = homedir();
 const USER_NAME = userInfo().username;

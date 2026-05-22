@@ -24,6 +24,7 @@ const App = () => {
   const [dbReady, setDbReady] = useState(false);
   const [draft, setDraft] = useState("");
   const [showProcesses, setShowProcesses] = useState(false);
+  const [wakeFlash, setWakeFlash] = useState(false);
   const activeChatIdRef = useRef<string | null>(null);
 
   const activeChat = chats.find((c) => c.id === activeChatId) ?? null;
@@ -161,6 +162,15 @@ const App = () => {
     });
   }, [startListening]);
 
+  // Wake word detected — flash the orb, then start listening
+  useEffect(() => {
+    return aiStore.onWake(() => {
+      setWakeFlash(true);
+      setTimeout(() => setWakeFlash(false), 900);
+      void startListening();
+    });
+  }, [startListening]);
+
   // Subscribe to streaming token chunks from main
   useEffect(() => {
     const offChunk = aiStore.onChunk(({ chatId, content }) => {
@@ -209,7 +219,12 @@ const App = () => {
       </div>
 
       {view.kind === "home" && (
-        <HomeView status={status} onMic={handleMic} onSend={handleSend} />
+        <HomeView
+          status={status}
+          wakeFlash={wakeFlash}
+          onMic={handleMic}
+          onSend={handleSend}
+        />
       )}
 
       {view.kind === "history" && (

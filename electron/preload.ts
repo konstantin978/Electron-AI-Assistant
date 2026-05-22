@@ -68,6 +68,7 @@ export type AiApi = {
   onHotkey: (callback: () => void) => () => void;
   onChunk: (callback: (payload: AiChunkPayload) => void) => () => void;
   onChunkEnd: (callback: (payload: AiChunkEndPayload) => void) => () => void;
+  onWake: (callback: () => void) => () => void;
 };
 
 const chatsApi: ChatsApi = {
@@ -107,6 +108,13 @@ const aiApi: AiApi = {
     ipcRenderer.on("ai:chunk-end", wrapped);
     return () => {
       ipcRenderer.removeListener("ai:chunk-end", wrapped);
+    };
+  },
+  onWake: (callback) => {
+    const wrapped = (): void => callback();
+    ipcRenderer.on("wake:detected", wrapped);
+    return () => {
+      ipcRenderer.removeListener("wake:detected", wrapped);
     };
   },
 };

@@ -34,6 +34,8 @@ import {
   resolveConfirmation,
 } from "../src/ai/confirm.js";
 import { cancelAllTimers } from "../src/tools/notifications.js";
+import { WakeWordLoop } from "../src/ai/wake-word.js";
+import { WAKE_WORD_ENABLED } from "../src/config.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -45,6 +47,7 @@ const WIN_WIDTH = 960;
 const WIN_HEIGHT = 540;
 
 let mainWindow: BrowserWindow | null = null;
+let wakeWordLoop: WakeWordLoop | null = null;
 
 const getTargetDisplay = () => {
   const cursor = screen.getCursorScreenPoint();
@@ -176,13 +179,18 @@ const registerIpc = (): void => {
   ipcMain.handle(
     "ai:listen",
     safeHandle("ai:listen", async () => {
-      // Stop any ongoing speech the moment the user starts a new turn
       cancelActiveSpeech();
+      // Pause the wake-word loop so the two `rec` processes don't fight
+      wakeWordLoop?.pause();
       log.info("🎤 listening...");
-      await recordAudio(AUDIO_PATH);
-      const transcript = await transcribe(AUDIO_PATH, WHISPER_MODEL);
-      log.info(`[transcribed] "${transcript}"`);
-      return transcript;
+      try {
+        await recordAudio(AUDIO_PATH);
+        const transcript = await transcribe(AUDIO_PATH, WHISPER_MODEL);
+        log.info(`[transcribed] "${transcript}"`);
+        return transcript;
+      } finally {
+        wakeWordLoop?.resume();
+      }
     }),
   );
 
@@ -273,6 +281,15 @@ app.whenReady().then(async () => {
   startBatteryPolling();
   startStatsPolling();
 
+  if (WAKE_WORD_ENABLED) {
+    wakeWordLoop = new WakeWordLoop(() => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("wake:detected");
+      }
+    });
+    wakeWordLoop.start();
+  }
+
   const ok = globalShortcut.register(HOTKEY, handleHotkey);
   if (!ok) log.error("hotkey registration failed");
   log.info(`Electron ready. Press ${HOTKEY} to talk.`);
@@ -282,6 +299,7 @@ app.on("will-quit", async () => {
   globalShortcut.unregisterAll();
   if (batteryTimer) clearInterval(batteryTimer);
   if (statsTimer) clearInterval(statsTimer);
+  wakeWordLoop?.stop();
   cancelAllTimers();
   await closeDb();
 });

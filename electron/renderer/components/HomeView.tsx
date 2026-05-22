@@ -4,11 +4,12 @@ import { MicOrb } from "./MicOrb.js";
 
 type Props = {
   status: Status;
+  wakeFlash?: boolean;
   onMic: () => void;
   onSend: (text: string) => void;
 };
 
-export const HomeView = ({ status, onMic, onSend }: Props) => {
+export const HomeView = ({ status, wakeFlash, onMic, onSend }: Props) => {
   const [draft, setDraft] = useState("");
   const disabled = status === "thinking";
 
@@ -27,7 +28,7 @@ export const HomeView = ({ status, onMic, onSend }: Props) => {
   };
 
   return (
-    <div className="home-view">
+    <div className={`home-view ${wakeFlash ? "wake-flash" : ""}`}>
       <div className="home-center">
         <MicOrb status={status} onClick={onMic} />
       </div>
