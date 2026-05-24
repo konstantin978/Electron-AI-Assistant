@@ -82,6 +82,8 @@ const buildHistoryWithCompression = async (
 
 export type SendOptions = {
   speak?: boolean;
+  /** Called when the speech queue has finished draining (only fires if speak). */
+  onSpeechDone?: () => void;
 };
 
 // The speaker for the most recent voice-mode turn. A new request cancels it
@@ -148,6 +150,18 @@ export const sendMessage = async (
     userDbMessage,
     ...newMessages.map(llmToDb),
   ]);
+
+  // 6. If speaking, fire-and-forget wait for the queue to drain, then notify.
+  //    The function itself returns before speech finishes (caller can stream
+  //    the reply immediately while audio plays in the background).
+  if (speaker && options.onSpeechDone) {
+    const onDone = options.onSpeechDone;
+    void speaker.waitForDrain().then(() => {
+      // Only fire if this speaker is still the active one (i.e. not cancelled
+      // mid-speech by a new request).
+      if (activeSpeaker === speaker) onDone();
+    });
+  }
 
   return reply;
 };

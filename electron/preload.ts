@@ -66,9 +66,12 @@ export type AiApi = {
   speak: (text: string) => Promise<void>;
   cancel: () => Promise<void>;
   onHotkey: (callback: () => void) => () => void;
+  onWake: (callback: () => void) => () => void;
+  onCancel: (callback: () => void) => () => void;
   onChunk: (callback: (payload: AiChunkPayload) => void) => () => void;
   onChunkEnd: (callback: (payload: AiChunkEndPayload) => void) => () => void;
-  onWake: (callback: () => void) => () => void;
+  onSpeechDone: (callback: (payload: AiChunkEndPayload) => void) => () => void;
+  onListenPartial: (callback: (text: string) => void) => () => void;
 };
 
 const chatsApi: ChatsApi = {
@@ -94,6 +97,20 @@ const aiApi: AiApi = {
       ipcRenderer.removeListener("hotkey:trigger", wrapped);
     };
   },
+  onWake: (callback) => {
+    const wrapped = (): void => callback();
+    ipcRenderer.on("wake:detected", wrapped);
+    return () => {
+      ipcRenderer.removeListener("wake:detected", wrapped);
+    };
+  },
+  onCancel: (callback) => {
+    const wrapped = (): void => callback();
+    ipcRenderer.on("wake:cancelled", wrapped);
+    return () => {
+      ipcRenderer.removeListener("wake:cancelled", wrapped);
+    };
+  },
   onChunk: (callback) => {
     const wrapped = (_e: unknown, payload: AiChunkPayload): void =>
       callback(payload);
@@ -110,11 +127,20 @@ const aiApi: AiApi = {
       ipcRenderer.removeListener("ai:chunk-end", wrapped);
     };
   },
-  onWake: (callback) => {
-    const wrapped = (): void => callback();
-    ipcRenderer.on("wake:detected", wrapped);
+  onSpeechDone: (callback) => {
+    const wrapped = (_e: unknown, payload: AiChunkEndPayload): void =>
+      callback(payload);
+    ipcRenderer.on("ai:speech-done", wrapped);
     return () => {
-      ipcRenderer.removeListener("wake:detected", wrapped);
+      ipcRenderer.removeListener("ai:speech-done", wrapped);
+    };
+  },
+  onListenPartial: (callback) => {
+    const wrapped = (_e: unknown, payload: { text: string }): void =>
+      callback(payload.text);
+    ipcRenderer.on("listen:partial", wrapped);
+    return () => {
+      ipcRenderer.removeListener("listen:partial", wrapped);
     };
   },
 };

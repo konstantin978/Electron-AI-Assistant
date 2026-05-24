@@ -166,6 +166,11 @@ const registerIpc = (): void => {
         try {
           const reply = await sendMessage(chatId, userText, onChunk, {
             speak: speakReply,
+            onSpeechDone: () => {
+              if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send("ai:speech-done", { chatId });
+              }
+            },
           });
           log.info(`[ai:reply] ${reply}`);
           return reply;
@@ -281,11 +286,23 @@ app.whenReady().then(async () => {
   startBatteryPolling();
   startStatsPolling();
 
+  // Continuous wake-word listening is OFF by default because whisper-stream
+  // costs ~15% CPU continuously (and 400%+ if it goes wrong). Users opt in
+  // explicitly via WAKE_WORD=1 in .env.
   if (WAKE_WORD_ENABLED) {
-    wakeWordLoop = new WakeWordLoop(() => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send("wake:detected");
-      }
+    wakeWordLoop = new WakeWordLoop({
+      onWake: () => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("wake:detected");
+        }
+      },
+      onCancel: () => {
+        log.info("[wake] cancel triggered → stopping speech");
+        cancelActiveSpeech();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("wake:cancelled");
+        }
+      },
     });
     wakeWordLoop.start();
   }

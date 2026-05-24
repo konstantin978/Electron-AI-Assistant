@@ -6,6 +6,7 @@ import {
   ChatBubbleIcon,
   HomeIcon,
   ActivityIcon,
+  LoopIcon,
 } from "./icons.js";
 
 type Props = {
@@ -13,11 +14,13 @@ type Props = {
   model: string;
   view: View;
   hasActiveChat: boolean;
+  conversationMode: boolean;
   onOpenHistory: () => void;
   onNewChat: () => void;
   onBack: () => void;
   onToggleChat: () => void;
   onOpenProcesses: () => void;
+  onToggleConversationMode: () => void;
 };
 
 const STATUS_LABELS: Record<Status, string> = {
@@ -32,11 +35,13 @@ export const Header = ({
   model,
   view,
   hasActiveChat,
+  conversationMode,
   onOpenHistory,
   onNewChat,
   onBack,
   onToggleChat,
   onOpenProcesses,
+  onToggleConversationMode,
 }: Props) => {
   const isIdle = status === "idle";
   const isHome = view.kind === "home";
@@ -115,6 +120,21 @@ export const Header = ({
             <HistoryIcon />
           </button>
         )}
+
+        <button
+          className={`icon-btn ${conversationMode ? "active" : ""}`}
+          type="button"
+          onClick={onToggleConversationMode}
+          title={
+            conversationMode
+              ? "Conversation mode ON — auto-listens after each reply"
+              : "Conversation mode OFF — press mic each time"
+          }
+          aria-label="Toggle conversation mode"
+          aria-pressed={conversationMode}
+        >
+          <LoopIcon />
+        </button>
 
         <button
           className="icon-btn"

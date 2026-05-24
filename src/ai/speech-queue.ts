@@ -34,6 +34,11 @@ export class StreamingSpeaker {
     cancelSpeech();
   }
 
+  /** Resolves when every queued sentence has finished playing. */
+  async waitForDrain(): Promise<void> {
+    await this.queue;
+  }
+
   private flushReady(): void {
     // Match anything up to a sentence terminator (.!?), optionally followed by
     // whitespace. Anything after the last terminator stays in the buffer.

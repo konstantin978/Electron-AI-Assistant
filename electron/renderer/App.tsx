@@ -12,6 +12,7 @@ import { aiStore } from "./store/ai.js";
 import type { Chat, Status, View } from "./types.js";
 
 const MODEL = "qwen2.5:7b";
+const CONVERSATION_MODE_KEY = "electron-ai:conversation-mode";
 
 const titleFromMessage = (text: string): string =>
   text.length > 40 ? `${text.slice(0, 37)}…` : text;
@@ -25,7 +26,17 @@ const App = () => {
   const [draft, setDraft] = useState("");
   const [showProcesses, setShowProcesses] = useState(false);
   const [wakeFlash, setWakeFlash] = useState(false);
+  const [partialTranscript, setPartialTranscript] = useState("");
+  const [conversationMode, setConversationMode] = useState(
+    () => localStorage.getItem(CONVERSATION_MODE_KEY) === "1",
+  );
   const activeChatIdRef = useRef<string | null>(null);
+  const conversationModeRef = useRef(conversationMode);
+
+  useEffect(() => {
+    conversationModeRef.current = conversationMode;
+    localStorage.setItem(CONVERSATION_MODE_KEY, conversationMode ? "1" : "0");
+  }, [conversationMode]);
 
   const activeChat = chats.find((c) => c.id === activeChatId) ?? null;
 
@@ -93,19 +104,27 @@ const App = () => {
     void sendText(text, false);
   };
 
-  // Voice flow: listen → transcribe → send → speak
+  // Voice flow: listen → transcribe → show → send → speak
   const startListening = useCallback(async (): Promise<void> => {
     if (status === "listening" || status === "thinking") return;
+    setPartialTranscript("");
     setStatus("listening");
     try {
       const transcript = await aiStore.listen();
       if (!transcript || transcript.trim().length === 0) {
+        setPartialTranscript("");
         setStatus("idle");
         return;
       }
+      // Briefly show the final transcribed text below the orb so the user
+      // sees what was heard before the AI starts responding.
+      setPartialTranscript(transcript);
       await sendText(transcript, true);
+      // Clear after AI is fully done (handleSend's finally sets idle)
+      setPartialTranscript("");
     } catch (err) {
       console.error("ai:listen failed:", err);
+      setPartialTranscript("");
       setStatus("idle");
     }
   }, [status, sendText]);
@@ -171,6 +190,14 @@ const App = () => {
     });
   }, [startListening]);
 
+  // Cancel word detected — speech already aborted in main; reset UI status
+  useEffect(() => {
+    return aiStore.onCancel(() => {
+      setStatus("idle");
+      setDraft("");
+    });
+  }, []);
+
   // Subscribe to streaming token chunks from main
   useEffect(() => {
     const offChunk = aiStore.onChunk(({ chatId, content }) => {
@@ -186,6 +213,17 @@ const App = () => {
       offEnd();
     };
   }, []);
+
+  // When the AI finishes speaking, if conversation mode is on, auto-listen
+  // again so the user can reply without pressing anything.
+  useEffect(() => {
+    return aiStore.onSpeechDone(() => {
+      if (conversationModeRef.current) {
+        void startListening();
+      }
+    });
+  }, [startListening]);
+
 
   if (!dbReady) {
     return (
@@ -206,11 +244,13 @@ const App = () => {
         model={MODEL}
         view={view}
         hasActiveChat={!!activeChatId}
+        conversationMode={conversationMode}
         onOpenHistory={handleOpenHistory}
         onNewChat={handleNewChat}
         onBack={handleBack}
         onToggleChat={handleToggleChat}
         onOpenProcesses={() => setShowProcesses(true)}
+        onToggleConversationMode={() => setConversationMode((v) => !v)}
       />
 
       <div className="sub-header">
@@ -222,6 +262,7 @@ const App = () => {
         <HomeView
           status={status}
           wakeFlash={wakeFlash}
+          partialTranscript={partialTranscript}
           onMic={handleMic}
           onSend={handleSend}
         />

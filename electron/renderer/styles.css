@@ -722,6 +722,13 @@ button {
   color: var(--text);
 }
 
+.icon-btn.active {
+  background: rgba(34, 240, 167, 0.15);
+  border-color: rgba(34, 240, 167, 0.4);
+  color: var(--green);
+  box-shadow: 0 0 12px rgba(34, 240, 167, 0.2);
+}
+
 .icon-btn svg {
   width: 14px;
   height: 14px;
@@ -1274,6 +1281,22 @@ button {
   color: var(--text-faint);
   text-transform: uppercase;
   transition: color 0.3s ease;
+}
+
+.mic-orb-live {
+  margin-top: 4px;
+  max-width: 80%;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
+  font-style: italic;
+  padding: 8px 14px;
+  background: rgba(34, 240, 167, 0.06);
+  border: 1px solid rgba(34, 240, 167, 0.2);
+  border-radius: 12px;
+  animation: msg-in 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+  word-wrap: break-word;
 }
 
 .mic-orb-wrap.status-listening .mic-orb-hint {

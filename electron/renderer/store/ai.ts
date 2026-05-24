@@ -18,9 +18,19 @@ export const aiStore = {
 
   onWake: (callback: () => void): (() => void) => window.ai.onWake(callback),
 
+  onCancel: (callback: () => void): (() => void) =>
+    window.ai.onCancel(callback),
+
   onChunk: (callback: (payload: AiChunkPayload) => void): (() => void) =>
     window.ai.onChunk(callback),
 
   onChunkEnd: (callback: (payload: AiChunkEndPayload) => void): (() => void) =>
     window.ai.onChunkEnd(callback),
+
+  onSpeechDone: (
+    callback: (payload: AiChunkEndPayload) => void,
+  ): (() => void) => window.ai.onSpeechDone(callback),
+
+  onListenPartial: (callback: (text: string) => void): (() => void) =>
+    window.ai.onListenPartial(callback),
 };
